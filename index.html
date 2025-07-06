@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Trading Simulation - $30/Day Target</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold mb-2">
+                <i class="fas fa-bitcoin text-yellow-400"></i> Bitcoin Trading Simulator
+            </h1>
+            <p class="text-blue-100">Advanced AI-Powered Trading Signals • Target: $30/Day • Live Price Data</p>
+        </div>
+
+        <!-- Price Display & Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Bitcoin Price</p>
+                        <p class="text-2xl font-bold" id="currentPrice">$0.00</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm" id="priceChange">+0.00%</p>
+                        <p class="text-xs text-gray-400" id="lastUpdate">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Auto Account</p>
+                        <p class="text-xl font-bold text-green-400" id="autoBalance">$200.00</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm" id="autoProfit">+$0.00</p>
+                        <p class="text-xs text-gray-400">Today</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Manual Account</p>
+                        <p class="text-xl font-bold text-blue-400" id="manualBalance">$200.00</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm" id="manualProfit">+$0.00</p>
+                        <p class="text-xs text-gray-400">Today</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Signal Strength</p>
+                        <p class="text-xl font-bold" id="signalStrength">Neutral</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm" id="signalScore">0/100</p>
+                        <p class="text-xs text-gray-400">Confidence</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Interface -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Chart Section -->
+            <div class="lg:col-span-2 bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Price Chart & Analysis</h2>
+                    <div class="flex space-x-2">
+                        <button class="timeframe-btn px-3 py-1 bg-blue-600 text-white rounded text-sm active" data-timeframe="1h">1H</button>
+                        <button class="timeframe-btn px-3 py-1 bg-gray-600 text-white rounded text-sm" data-timeframe="4h">4H</button>
+                        <button class="timeframe-btn px-3 py-1 bg-gray-600 text-white rounded text-sm" data-timeframe="12h">12H</button>
+                        <button class="timeframe-btn px-3 py-1 bg-gray-600 text-white rounded text-sm" data-timeframe="1d">1D</button>
+                    </div>
+                </div>
+                <div class="relative">
+                    <canvas id="priceChart" style="height: 400px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Signal Panel -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4">Trading Signals</h2>
+                
+                <!-- Current Signal -->
+                <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-lg font-semibold">Current Signal</span>
+                        <span class="px-2 py-1 rounded text-sm bg-gray-600" id="currentSignalType">HOLD</span>
+                    </div>
+                    <p class="text-sm text-gray-300 mb-2" id="signalReason">Waiting for market conditions...</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Confidence:</span>
+                        <span class="text-sm font-semibold" id="signalConfidence">0%</span>
+                    </div>
+                </div>
+
+                <!-- Manual Trading Controls -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm">Trade Amount ($)</label>
+                        <input type="number" id="tradeAmount" value="50" min="10" max="1000" class="w-20 bg-gray-700 rounded px-2 py-1 text-sm">
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="manualBuy" class="flex-1 bg-green-600 hover:bg-green-700 py-2 rounded font-semibold">
+                            <i class="fas fa-arrow-up mr-1"></i>BUY
+                        </button>
+                        <button id="manualSell" class="flex-1 bg-red-600 hover:bg-red-700 py-2 rounded font-semibold">
+                            <i class="fas fa-arrow-down mr-1"></i>SELL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Technical Indicators -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-3">Technical Analysis</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>RSI (14):</span>
+                            <span id="rsiValue">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>MACD:</span>
+                            <span id="macdValue">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>SMA (20):</span>
+                            <span id="smaValue">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>EMA (12):</span>
+                            <span id="emaValue">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>BB Position:</span>
+                            <span id="bbValue">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trading Accounts Tabs -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <div class="flex space-x-4 mb-6">
+                <button class="tab-btn px-4 py-2 bg-blue-600 text-white rounded active" data-tab="auto">
+                    <i class="fas fa-robot mr-2"></i>Auto Trading
+                </button>
+                <button class="tab-btn px-4 py-2 bg-gray-600 text-white rounded" data-tab="manual">
+                    <i class="fas fa-user mr-2"></i>Manual Trading
+                </button>
+                <button class="tab-btn px-4 py-2 bg-gray-600 text-white rounded" data-tab="comparison">
+                    <i class="fas fa-chart-line mr-2"></i>Performance Comparison
+                </button>
+            </div>
+
+            <!-- Auto Trading Tab -->
+            <div id="autoTab" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3">Auto Trading Settings</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm">Auto Trading</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="autoTradingToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm">Risk Level</label>
+                                <select id="riskLevel" class="bg-gray-700 rounded px-2 py-1 text-sm">
+                                    <option value="conservative">Conservative</option>
+                                    <option value="moderate" selected>Moderate</option>
+                                    <option value="aggressive">Aggressive</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm">Max Trade Size (%)</label>
+                                <input type="number" id="maxTradeSize" value="25" min="5" max="50" class="w-20 bg-gray-700 rounded px-2 py-1 text-sm">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm">Stop Loss (%)</label>
+                                <input type="number" id="stopLoss" value="2" min="0.5" max="10" step="0.1" class="w-20 bg-gray-700 rounded px-2 py-1 text-sm">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm">Take Profit (%)</label>
+                                <input type="number" id="takeProfit" value="3" min="1" max="20" step="0.1" class="w-20 bg-gray-700 rounded px-2 py-1 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3">Recent Auto Trades</h3>
+                        <div id="autoTradesHistory" class="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
+                            <!-- Auto trades will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Trading Tab -->
+            <div id="manualTab" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3">Manual Trading Actions</h3>
+                        <div class="space-y-4">
+                            <div class="bg-gray-700 rounded-lg p-4">
+                                <h4 class="font-semibold mb-2">Signal Recommendation</h4>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span>Action:</span>
+                                    <span class="font-semibold" id="recommendedAction">HOLD</span>
+                                </div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span>Entry Price:</span>
+                                    <span id="recommendedEntry">$0.00</span>
+                                </div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span>Target:</span>
+                                    <span id="recommendedTarget">$0.00</span>
+                                </div>
+                                <button id="followSignal" class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-semibold mt-2">
+                                    Follow Signal
+                                </button>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-4">
+                                <h4 class="font-semibold mb-2">Dollar Cost Averaging</h4>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-sm">DCA Amount ($)</label>
+                                        <input type="number" id="dcaAmount" value="20" min="10" max="100" class="w-20 bg-gray-600 rounded px-2 py-1 text-sm">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <label class="text-sm">DCA Interval</label>
+                                        <select id="dcaInterval" class="bg-gray-600 rounded px-2 py-1 text-sm">
+                                            <option value="5">5 min</option>
+                                            <option value="15">15 min</option>
+                                            <option value="30">30 min</option>
+                                            <option value="60" selected>1 hour</option>
+                                        </select>
+                                    </div>
+                                    <button id="startDCA" class="w-full bg-green-600 hover:bg-green-700 py-2 rounded font-semibold">
+                                        Start DCA
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3">Manual Trade History</h3>
+                        <div id="manualTradesHistory" class="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
+                            <!-- Manual trades will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Tab -->
+            <div id="comparisonTab" class="tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3">Performance Metrics</h3>
+                        <div class="space-y-4">
+                            <div class="bg-gray-700 rounded-lg p-4">
+                                <h4 class="font-semibold mb-2">Auto Trading Performance</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span>Total Trades:</span>
+                                        <span id="autoTotalTrades">0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Win Rate:</span>
+                                        <span id="autoWinRate">0%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Avg Trade:</span>
+                                        <span id="autoAvgTrade">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Daily Profit:</span>
+                                        <span id="autoDailyProfit">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Total ROI:</span>
+                                        <span id="autoROI">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-4">
+                                <h4 class="font-semibold mb-2">Manual Trading Performance</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span>Total Trades:</span>
+                                        <span id="manualTotalTrades">0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Win Rate:</span>
+                                        <span id="manualWinRate">0%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Avg Trade:</span>
+                                        <span id="manualAvgTrade">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Daily Profit:</span>
+                                        <span id="manualDailyProfit">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Total ROI:</span>
+                                        <span id="manualROI">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3">Performance Chart</h3>
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <canvas id="performanceChart" style="height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .tab-btn.active {
+            background-color: #2563eb !important;
+        }
+
+        .timeframe-btn.active {
+            background-color: #2563eb !important;
+        }
+
+        .trade-item {
+            background-color: #374151;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid;
+        }
+
+        .trade-item.buy {
+            border-left-color: #10b981;
+        }
+
+        .trade-item.sell {
+            border-left-color: #ef4444;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #374151;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #6b7280;
+            border-radius: 3px;
+        }
+    </style>
+
+    <script>
+        // Global variables
+        let currentPrice = 0;
+        let priceHistory = [];
+        let autoAccount = { balance: 200, position: 0, positionSize: 0, trades: [] };
+        let manualAccount = { balance: 200, position: 0, positionSize: 0, trades: [] };
+        let priceChart = null;
+        let performanceChart = null;
+        let currentTimeframe = '1h';
+        let autoTradingEnabled = false;
+        let dcaActive = false;
+        let dcaInterval = null;
+        let lastSignal = { type: 'HOLD', confidence: 0, reason: '' };
+        let previousPrice = 0;
+
+        // Technical indicators
+        let technicalData = {
+            rsi: 50,
+            macd: 0,
+            sma20: 0,
+            ema12: 0,
+            bbPosition: 'Middle'
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing app...');
+            initializeApp();
+        });
+
+        function initializeApp() {
+            console.log('Initializing app...');
+            
+            // Load stored data first
+            loadStoredData();
+            
+            // Initialize charts
+            initializePriceChart();
+            initializePerformanceChart();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Set initial values
+            updateDisplay();
+            
+            // Start with auto tab active
+            showTab('auto');
+            
+            // Start price updates and trading engine
+            startPriceUpdates();
+            startTradingEngine();
+            
+            console.log('App initialized successfully');
+        }
+
+        function loadStoredData() {
+            console.log('Loading stored data...');
+            
+            // Load data from localStorage
+            const savedAutoAccount = localStorage.getItem('btc_auto_account');
+            const savedManualAccount = localStorage.getItem('btc_manual_account');
+            const savedPriceHistory = localStorage.getItem('btc_price_history');
+            
+            if (savedAutoAccount) {
+                try {
+                    const parsed = JSON.parse(savedAutoAccount);
+                    autoAccount = {
+                        ...autoAccount,
+                        ...parsed,
+                        trades: parsed.trades ? parsed.trades.map(trade => ({
+                            ...trade,
+                            timestamp: trade.timestamp ? new Date(trade.timestamp) : new Date()
+                        })) : []
+                    };
+                    console.log('Auto account data loaded');
+                } catch (e) {
+                    console.error('Error loading auto account data:', e);
+                }
+            }
+            
+            if (savedManualAccount) {
+                try {
+                    const parsed = JSON.parse(savedManualAccount);
+                    manualAccount = {
+                        ...manualAccount,
+                        ...parsed,
+                        trades: parsed.trades ? parsed.trades.map(trade => ({
+                            ...trade,
+                            timestamp: trade.timestamp ? new Date(trade.timestamp) : new Date()
+                        })) : []
+                    };
+                    console.log('Manual account data loaded');
+                } catch (e) {
+                    console.error('Error loading manual account data:', e);
+                }
+            }
+
+            if (savedPriceHistory) {
+                try {
+                    const parsed = JSON.parse(savedPriceHistory);
+                    priceHistory = parsed.map(item => ({
+                        ...item,
+                        time: new Date(item.time)
+                    }));
+                    console.log('Price history loaded:', priceHistory.length, 'entries');
+                } catch (e) {
+                    console.error('Error loading price history:', e);
+                }
+            }
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('btc_auto_account', JSON.stringify(autoAccount));
+                localStorage.setItem('btc_manual_account', JSON.stringify(manualAccount));
+                localStorage.setItem('btc_price_history', JSON.stringify(priceHistory));
+            } catch (e) {
+                console.error('Error saving data:', e);
+            }
+        }
+
+        function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const tab = e.currentTarget.dataset.tab;
+                    console.log('Tab clicked:', tab);
+                    showTab(tab);
+                });
+            });
+
+            // Timeframe switching
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const timeframe = e.currentTarget.dataset.timeframe;
+                    console.log('Timeframe clicked:', timeframe);
+                    setTimeframe(timeframe);
+                });
+            });
+
+            // Auto trading toggle
+            const autoToggle = document.getElementById('autoTradingToggle');
+            if (autoToggle) {
+                autoToggle.addEventListener('change', (e) => {
+                    autoTradingEnabled = e.target.checked;
+                    console.log('Auto trading toggled:', autoTradingEnabled);
+                    if (autoTradingEnabled) {
+                        addNotification('Auto trading enabled', 'success');
+                    } else {
+                        addNotification('Auto trading disabled', 'warning');
+                    }
+                });
+            }
+
+            // Manual trading buttons
+            const manualBuyBtn = document.getElementById('manualBuy');
+            const manualSellBtn = document.getElementById('manualSell');
+            
+            if (manualBuyBtn) {
+                manualBuyBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Manual buy clicked');
+                    const amount = parseFloat(document.getElementById('tradeAmount').value);
+                    if (isNaN(amount) || amount < 10) {
+                        addNotification('Please enter a valid amount (minimum $10)', 'error');
+                        return;
+                    }
+                    executeManualTrade('BUY', amount);
+                });
+            }
+
+            if (manualSellBtn) {
+                manualSellBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Manual sell clicked');
+                    const amount = parseFloat(document.getElementById('tradeAmount').value);
+                    if (isNaN(amount) || amount < 10) {
+                        addNotification('Please enter a valid amount (minimum $10)', 'error');
+                        return;
+                    }
+                    executeManualTrade('SELL', amount);
+                });
+            }
+
+            // Follow signal button
+            const followSignalBtn = document.getElementById('followSignal');
+            if (followSignalBtn) {
+                followSignalBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    followCurrentSignal();
+                });
+            }
+
+            // DCA controls
+            const startDCABtn = document.getElementById('startDCA');
+            if (startDCABtn) {
+                startDCABtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    toggleDCA();
+                });
+            }
+            
+            console.log('Event listeners set up successfully');
+        }
+
+        function showTab(tabName) {
+            console.log('Showing tab:', tabName);
+            
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // Show selected tab
+            const targetTab = document.getElementById(tabName + 'Tab');
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+            }
+
+            // Update button states
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('bg-gray-600');
+                btn.classList.remove('bg-blue-600');
+                
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active');
+                    btn.classList.remove('bg-gray-600');
+                    btn.classList.add('bg-blue-600');
+                }
+            });
+
+            // Update data for the selected tab
+            if (tabName === 'comparison') {
+                updateComparisonChart();
+            }
+        }
+
+        function setTimeframe(timeframe) {
+            console.log('Setting timeframe:', timeframe);
+            currentTimeframe = timeframe;
+            
+            // Update button states
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('bg-gray-600');
+                btn.classList.remove('bg-blue-600');
+                
+                if (btn.dataset.timeframe === timeframe) {
+                    btn.classList.add('active');
+                    btn.classList.remove('bg-gray-600');
+                    btn.classList.add('bg-blue-600');
+                }
+            });
+
+            // Update chart data
+            updateChartData();
+        }
+
+        async function fetchBitcoinPrice() {
+            try {
+                // Try Binance first
+                const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+                if (binanceResponse.ok) {
+                    const binanceData = await binanceResponse.json();
+                    const price = parseFloat(binanceData.price);
+                    if (!isNaN(price) && price > 0) {
+                        console.log('Fetched price from Binance:', price);
+                        return price;
+                    }
+                }
+            } catch (error) {
+                console.log('Binance API failed, trying CoinGecko...');
+            }
+
+            try {
+                // Fallback to CoinGecko
+                const coingeckoResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                if (coingeckoResponse.ok) {
+                    const coingeckoData = await coingeckoResponse.json();
+                    const price = coingeckoData.bitcoin.usd;
+                    if (!isNaN(price) && price > 0) {
+                        console.log('Fetched price from CoinGecko:', price);
+                        return price;
+                    }
+                }
+            } catch (error) {
+                console.log('CoinGecko API failed');
+            }
+
+            // If both fail, simulate price movement
+            console.log('Using simulated price');
+            return simulatePrice();
+        }
+
+        function simulatePrice() {
+            if (currentPrice === 0 || isNaN(currentPrice)) {
+                currentPrice = 45000 + Math.random() * 10000; // Random starting price
+                console.log('Initial simulated price:', currentPrice);
+            }
+            
+            // Simulate realistic price movement
+            const volatility = 0.002; // 0.2% volatility
+            const trend = (Math.random() - 0.5) * 0.001; // Small trend component
+            const change = (Math.random() - 0.5) * volatility + trend;
+            
+            currentPrice = currentPrice * (1 + change);
+            return currentPrice;
+        }
+
+        function startPriceUpdates() {
+            console.log('Starting price updates...');
+            updatePrice();
+            setInterval(updatePrice, 5000); // Update every 5 seconds
+        }
+
+        async function updatePrice() {
+            try {
+                const newPrice = await fetchBitcoinPrice();
+                if (!isNaN(newPrice) && newPrice > 0) {
+                    previousPrice = currentPrice || newPrice;
+                    currentPrice = newPrice;
+
+                    // Add to price history
+                    const now = new Date();
+                    priceHistory.push({
+                        time: now,
+                        price: currentPrice
+                    });
+
+                    // Keep only last 100 data points
+                    if (priceHistory.length > 100) {
+                        priceHistory.shift();
+                    }
+
+                    // Update display
+                    updatePriceDisplay();
+                    updateChart();
+                    calculateTechnicalIndicators();
+                    
+                    // Save data periodically
+                    saveData();
+                }
+            } catch (error) {
+                console.error('Error updating price:', error);
+                // Use simulated price if all else fails
+                const simulatedPrice = simulatePrice();
+                if (!isNaN(simulatedPrice)) {
+                    previousPrice = currentPrice || simulatedPrice;
+                    currentPrice = simulatedPrice;
+                    
+                    // Add to price history
+                    const now = new Date();
+                    priceHistory.push({
+                        time: now,
+                        price: currentPrice
+                    });
+
+                    // Keep only last 100 data points
+                    if (priceHistory.length > 100) {
+                        priceHistory.shift();
+                    }
+                    
+                    updatePriceDisplay();
+                    updateChart();
+                    calculateTechnicalIndicators();
+                }
+            }
+        }
+
+        function updatePriceDisplay() {
+            const priceElement = document.getElementById('currentPrice');
+            const changeElement = document.getElementById('priceChange');
+            const updateElement = document.getElementById('lastUpdate');
+
+            if (priceElement) {
+                priceElement.textContent = `$${currentPrice.toFixed(2)}`;
+            }
+            
+            if (changeElement && previousPrice > 0 && !isNaN(previousPrice)) {
+                const changePercent = ((currentPrice - previousPrice) / previousPrice) * 100;
+                changeElement.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+                changeElement.className = `text-sm ${changePercent >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            }
+
+            if (updateElement) {
+                updateElement.textContent = new Date().toLocaleTimeString();
+            }
+        }
+
+        function calculateTechnicalIndicators() {
+            if (priceHistory.length < 20) return;
+
+            const prices = priceHistory.map(p => p.price);
+            
+            // RSI calculation
+            technicalData.rsi = calculateRSI(prices, 14);
+            
+            // SMA calculation
+            technicalData.sma20 = calculateSMA(prices, 20);
+            
+            // EMA calculation
+            technicalData.ema12 = calculateEMA(prices, 12);
+            
+            // MACD calculation
+            technicalData.macd = calculateMACD(prices);
+            
+            // Bollinger Bands position
+            technicalData.bbPosition = calculateBBPosition(prices, 20);
+
+            // Update technical indicators display
+            updateTechnicalDisplay();
+        }
+
+        function calculateRSI(prices, period) {
+            if (prices.length < period + 1) return 50;
+            
+            let gains = 0;
+            let losses = 0;
+            
+            for (let i = prices.length - period; i < prices.length; i++) {
+                const change = prices[i] - prices[i - 1];
+                if (change > 0) gains += change;
+                else losses += Math.abs(change);
+            }
+            
+            const avgGain = gains / period;
+            const avgLoss = losses / period;
+            
+            if (avgLoss === 0) return 100;
+            
+            const rs = avgGain / avgLoss;
+            return 100 - (100 / (1 + rs));
+        }
+
+        function calculateSMA(prices, period) {
+            if (prices.length < period) return prices[prices.length - 1];
+            
+            const sum = prices.slice(-period).reduce((a, b) => a + b, 0);
+            return sum / period;
+        }
+
+        function calculateEMA(prices, period) {
+            if (prices.length < period) return prices[prices.length - 1];
+            
+            const multiplier = 2 / (period + 1);
+            let ema = prices[0];
+            
+            for (let i = 1; i < prices.length; i++) {
+                ema = (prices[i] * multiplier) + (ema * (1 - multiplier));
+            }
+            
+            return ema;
+        }
+
+        function calculateMACD(prices) {
+            if (prices.length < 26) return 0;
+            
+            const ema12 = calculateEMA(prices, 12);
+            const ema26 = calculateEMA(prices, 26);
+            return ema12 - ema26;
+        }
+
+        function calculateBBPosition(prices, period) {
+            if (prices.length < period) return 'Middle';
+            
+            const sma = calculateSMA(prices, period);
+            const variance = prices.slice(-period).reduce((sum, price) => sum + Math.pow(price - sma, 2), 0) / period;
+            const stdDev = Math.sqrt(variance);
+            
+            const upperBand = sma + (stdDev * 2);
+            const lowerBand = sma - (stdDev * 2);
+            const currentPrice = prices[prices.length - 1];
+            
+            if (currentPrice > upperBand) return 'Upper';
+            if (currentPrice < lowerBand) return 'Lower';
+            return 'Middle';
+        }
+
+        function updateTechnicalDisplay() {
+            const elements = {
+                rsiValue: technicalData.rsi.toFixed(2),
+                macdValue: technicalData.macd.toFixed(2),
+                smaValue: `$${technicalData.sma20.toFixed(2)}`,
+                emaValue: `$${technicalData.ema12.toFixed(2)}`,
+                bbValue: technicalData.bbPosition
+            };
+
+            Object.keys(elements).forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = elements[id];
+                }
+            });
+        }
+
+        function generateTradingSignal() {
+            const signals = [];
+            let confidence = 0;
+            let reason = '';
+
+            // RSI signals
+            if (technicalData.rsi < 30) {
+                signals.push('BUY');
+                confidence += 25;
+                reason += 'RSI oversold, ';
+            } else if (technicalData.rsi > 70) {
+                signals.push('SELL');
+                confidence += 25;
+                reason += 'RSI overbought, ';
+            }
+
+            // MACD signals
+            if (technicalData.macd > 0) {
+                signals.push('BUY');
+                confidence += 15;
+                reason += 'MACD positive, ';
+            } else if (technicalData.macd < 0) {
+                signals.push('SELL');
+                confidence += 15;
+                reason += 'MACD negative, ';
+            }
+
+            // Price vs SMA
+            if (currentPrice > technicalData.sma20) {
+                signals.push('BUY');
+                confidence += 20;
+                reason += 'Price above SMA20, ';
+            } else if (currentPrice < technicalData.sma20) {
+                signals.push('SELL');
+                confidence += 20;
+                reason += 'Price below SMA20, ';
+            }
+
+            // Bollinger Bands
+            if (technicalData.bbPosition === 'Lower') {
+                signals.push('BUY');
+                confidence += 20;
+                reason += 'At lower Bollinger Band, ';
+            } else if (technicalData.bbPosition === 'Upper') {
+                signals.push('SELL');
+                confidence += 20;
+                reason += 'At upper Bollinger Band, ';
+            }
+
+            // Price momentum
+            if (priceHistory.length >= 5) {
+                const recentPrices = priceHistory.slice(-5).map(p => p.price);
+                const momentum = (recentPrices[4] - recentPrices[0]) / recentPrices[0];
+                
+                if (momentum > 0.002) {
+                    signals.push('BUY');
+                    confidence += 15;
+                    reason += 'Strong upward momentum, ';
+                } else if (momentum < -0.002) {
+                    signals.push('SELL');
+                    confidence += 15;
+                    reason += 'Strong downward momentum, ';
+                }
+            }
+
+            // Determine final signal
+            const buySignals = signals.filter(s => s === 'BUY').length;
+            const sellSignals = signals.filter(s => s === 'SELL').length;
+            
+            let finalSignal = 'HOLD';
+            if (buySignals > sellSignals && confidence > 40) {
+                finalSignal = 'BUY';
+            } else if (sellSignals > buySignals && confidence > 40) {
+                finalSignal = 'SELL';
+            }
+
+            lastSignal = {
+                type: finalSignal,
+                confidence: Math.min(confidence, 100),
+                reason: reason.slice(0, -2) || 'Market conditions neutral'
+            };
+
+            updateSignalDisplay();
+            return lastSignal;
+        }
+
+        function updateSignalDisplay() {
+            const signalElement = document.getElementById('currentSignalType');
+            const reasonElement = document.getElementById('signalReason');
+            const confidenceElement = document.getElementById('signalConfidence');
+            const strengthElement = document.getElementById('signalStrength');
+            const scoreElement = document.getElementById('signalScore');
+
+            if (signalElement) {
+                signalElement.textContent = lastSignal.type;
+                signalElement.className = `px-2 py-1 rounded text-sm ${
+                    lastSignal.type === 'BUY' ? 'bg-green-600' : 
+                    lastSignal.type === 'SELL' ? 'bg-red-600' : 'bg-gray-600'
+                }`;
+            }
+
+            if (reasonElement) {
+                reasonElement.textContent = lastSignal.reason;
+            }
+            
+            if (confidenceElement) {
+                confidenceElement.textContent = `${lastSignal.confidence}%`;
+            }
+            
+            // Update signal strength
+            if (strengthElement) {
+                if (lastSignal.confidence >= 70) {
+                    strengthElement.textContent = 'Strong';
+                    strengthElement.className = 'text-xl font-bold text-green-400';
+                } else if (lastSignal.confidence >= 50) {
+                    strengthElement.textContent = 'Moderate';
+                    strengthElement.className = 'text-xl font-bold text-yellow-400';
+                } else {
+                    strengthElement.textContent = 'Weak';
+                    strengthElement.className = 'text-xl font-bold text-red-400';
+                }
+            }
+
+            if (scoreElement) {
+                scoreElement.textContent = `${lastSignal.confidence}/100`;
+            }
+
+            // Update manual recommendations
+            const recommendedActionElement = document.getElementById('recommendedAction');
+            const recommendedEntryElement = document.getElementById('recommendedEntry');
+            const recommendedTargetElement = document.getElementById('recommendedTarget');
+
+            if (recommendedActionElement) {
+                recommendedActionElement.textContent = lastSignal.type;
+            }
+            
+            if (recommendedEntryElement) {
+                recommendedEntryElement.textContent = `$${currentPrice.toFixed(2)}`;
+            }
+            
+            if (recommendedTargetElement) {
+                if (lastSignal.type === 'BUY') {
+                    const target = currentPrice * 1.03; // 3% target
+                    recommendedTargetElement.textContent = `$${target.toFixed(2)}`;
+                } else if (lastSignal.type === 'SELL') {
+                    const target = currentPrice * 0.97; // 3% target
+                    recommendedTargetElement.textContent = `$${target.toFixed(2)}`;
+                } else {
+                    recommendedTargetElement.textContent = 'Hold';
+                }
+            }
+        }
+
+        function startTradingEngine() {
+            console.log('Starting trading engine...');
+            
+            // Generate signals every 30 seconds
+            setInterval(() => {
+                generateTradingSignal();
+                
+                // Execute auto trades if enabled
+                if (autoTradingEnabled) {
+                    executeAutoTrade();
+                }
+            }, 30000);
+
+            // Initial signal
+            generateTradingSignal();
+        }
+
+        function executeAutoTrade() {
+            const signal = lastSignal;
+            
+            if (signal.type === 'HOLD' || signal.confidence < 50) {
+                return;
+            }
+
+            const riskLevel = document.getElementById('riskLevel').value;
+            const maxTradePercent = parseFloat(document.getElementById('maxTradeSize').value) / 100;
+            
+            let tradeSize = autoAccount.balance * maxTradePercent;
+            
+            // Adjust trade size based on risk level
+            if (riskLevel === 'conservative') {
+                tradeSize *= 0.5;
+            } else if (riskLevel === 'aggressive') {
+                tradeSize *= 1.5;
+            }
+
+            // Adjust trade size based on confidence
+            tradeSize *= (signal.confidence / 100);
+
+            if (signal.type === 'BUY' && autoAccount.position <= 0 && tradeSize >= 10) {
+                executeTrade('auto', 'BUY', tradeSize, signal.reason);
+            } else if (signal.type === 'SELL' && autoAccount.position > 0) {
+                const saleAmount = autoAccount.position * currentPrice;
+                executeTrade('auto', 'SELL', saleAmount, signal.reason);
+            }
+        }
+
+        function executeTrade(accountType, action, amount, reason = '') {
+            console.log(`Executing ${accountType} ${action} trade for $${amount.toFixed(2)}`);
+            
+            const account = accountType === 'auto' ? autoAccount : manualAccount;
+            const timestamp = new Date();
+            
+            if (action === 'BUY') {
+                if (account.balance >= amount) {
+                    const bitcoinAmount = amount / currentPrice;
+                    account.balance -= amount;
+                    account.position += bitcoinAmount;
+                    account.positionSize += amount; // Accumulate position size for multiple buys
+                    
+                    const trade = {
+                        id: Date.now(),
+                        type: 'BUY',
+                        amount: amount,
+                        price: currentPrice,
+                        bitcoinAmount: bitcoinAmount,
+                        timestamp: timestamp,
+                        reason: reason
+                    };
+                    
+                    account.trades.push(trade);
+                    addTradeToHistory(accountType, trade);
+                    addNotification(`${accountType.toUpperCase()}: Bought $${amount.toFixed(2)} BTC at $${currentPrice.toFixed(2)}`, 'success');
+                } else {
+                    addNotification(`${accountType.toUpperCase()}: Insufficient funds for trade`, 'error');
+                    return;
+                }
+            } else if (action === 'SELL') {
+                if (account.position > 0) {
+                    const saleAmount = account.position * currentPrice;
+                    const profit = saleAmount - account.positionSize;
+                    
+                    account.balance += saleAmount;
+                    account.position = 0;
+                    account.positionSize = 0;
+                    
+                    const trade = {
+                        id: Date.now(),
+                        type: 'SELL',
+                        amount: saleAmount,
+                        price: currentPrice,
+                        bitcoinAmount: account.position,
+                        profit: profit,
+                        timestamp: timestamp,
+                        reason: reason
+                    };
+                    
+                    account.trades.push(trade);
+                    addTradeToHistory(accountType, trade);
+                    addNotification(`${accountType.toUpperCase()}: Sold BTC for $${saleAmount.toFixed(2)} (${profit >= 0 ? '+' : ''}$${profit.toFixed(2)})`, profit >= 0 ? 'success' : 'error');
+                } else {
+                    addNotification(`${accountType.toUpperCase()}: No position to sell`, 'error');
+                    return;
+                }
+            }
+            
+            updateDisplay();
+            saveData();
+        }
+
+        function executeManualTrade(action, amount) {
+            executeTrade('manual', action, amount, 'Manual trade');
+        }
+
+        function followCurrentSignal() {
+            if (lastSignal.type === 'HOLD') {
+                addNotification('No signal to follow', 'warning');
+                return;
+            }
+
+            const amount = parseFloat(document.getElementById('tradeAmount').value);
+            if (isNaN(amount) || amount < 10) {
+                addNotification('Please enter a valid trade amount', 'error');
+                return;
+            }
+            executeTrade('manual', lastSignal.type, amount, `Following signal: ${lastSignal.reason}`);
+        }
+
+        function toggleDCA() {
+            const button = document.getElementById('startDCA');
+            
+            if (dcaActive) {
+                // Stop DCA
+                clearInterval(dcaInterval);
+                dcaActive = false;
+                button.textContent = 'Start DCA';
+                button.className = 'w-full bg-green-600 hover:bg-green-700 py-2 rounded font-semibold';
+                addNotification('DCA stopped', 'warning');
+            } else {
+                // Start DCA
+                const amount = parseFloat(document.getElementById('dcaAmount').value);
+                if (isNaN(amount) || amount < 10) {
+                    addNotification('Please enter a valid DCA amount', 'error');
+                    return;
+                }
+                const interval = parseInt(document.getElementById('dcaInterval').value) * 60000; // Convert to milliseconds
+                
+                dcaActive = true;
+                button.textContent = 'Stop DCA';
+                button.className = 'w-full bg-red-600 hover:bg-red-700 py-2 rounded font-semibold';
+                
+                // Execute first trade immediately
+                executeTrade('manual', 'BUY', amount, 'DCA purchase');
+                
+                dcaInterval = setInterval(() => {
+                    executeTrade('manual', 'BUY', amount, 'DCA purchase');
+                }, interval);
+                
+                addNotification(`DCA started: $${amount} every ${document.getElementById('dcaInterval').value} minutes`, 'success');
+            }
+        }
+
+        function addTradeToHistory(accountType, trade) {
+            const historyId = accountType === 'auto' ? 'autoTradesHistory' : 'manualTradesHistory';
+            const historyElement = document.getElementById(historyId);
+            
+            if (!historyElement) return;
+            
+            const tradeElement = document.createElement('div');
+            tradeElement.className = `trade-item ${trade.type.toLowerCase()}`;
+            tradeElement.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="font-semibold">${trade.type}</span>
+                        <span class="text-sm text-gray-300">$${trade.amount.toFixed(2)}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm">$${trade.price.toFixed(2)}</div>
+                        <div class="text-xs text-gray-400">${trade.timestamp.toLocaleTimeString()}</div>
+                    </div>
+                </div>
+                ${trade.reason ? `<div class="text-xs text-gray-400 mt-1">${trade.reason}</div>` : ''}
+                ${trade.profit !== undefined ? `<div class="text-xs ${trade.profit >= 0 ? 'text-green-400' : 'text-red-400'} mt-1">P&L: ${trade.profit >= 0 ? '+' : ''}$${trade.profit.toFixed(2)}</div>` : ''}
+            `;
+            
+            historyElement.insertBefore(tradeElement, historyElement.firstChild);
+            
+            // Keep only last 20 trades visible
+            while (historyElement.children.length > 20) {
+                historyElement.removeChild(historyElement.lastChild);
+            }
+        }
+
+        function addNotification(message, type = 'info') {
+            console.log(`Notification [${type}]: ${message}`);
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+                type === 'success' ? 'bg-green-600' : 
+                type === 'error' ? 'bg-red-600' : 
+                type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        function updateDisplay() {
+            // Update account balances
+            const autoTotalValue = autoAccount.balance + (autoAccount.position * currentPrice);
+            const manualTotalValue = manualAccount.balance + (manualAccount.position * currentPrice);
+            
+            const autoBalanceElement = document.getElementById('autoBalance');
+            const manualBalanceElement = document.getElementById('manualBalance');
+            
+            if (autoBalanceElement) {
+                autoBalanceElement.textContent = `$${autoTotalValue.toFixed(2)}`;
+            }
+            
+            if (manualBalanceElement) {
+                manualBalanceElement.textContent = `$${manualTotalValue.toFixed(2)}`;
+            }
+            
+            // Calculate daily profits
+            const autoProfit = autoTotalValue - 200;
+            const manualProfit = manualTotalValue - 200;
+            
+            const autoProfitElement = document.getElementById('autoProfit');
+            const manualProfitElement = document.getElementById('manualProfit');
+            
+            if (autoProfitElement) {
+                autoProfitElement.textContent = `${autoProfit >= 0 ? '+' : ''}$${autoProfit.toFixed(2)}`;
+                autoProfitElement.className = `text-sm ${autoProfit >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            }
+            
+            if (manualProfitElement) {
+                manualProfitElement.textContent = `${manualProfit >= 0 ? '+' : ''}$${manualProfit.toFixed(2)}`;
+                manualProfitElement.className = `text-sm ${manualProfit >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            }
+            
+            // Update performance metrics
+            updatePerformanceMetrics();
+        }
+
+        function updatePerformanceMetrics() {
+            // Auto account metrics
+            const autoWinningTrades = autoAccount.trades.filter(t => t.profit && t.profit > 0).length;
+            const autoTotalTrades = autoAccount.trades.filter(t => t.profit !== undefined).length;
+            const autoWinRate = autoTotalTrades > 0 ? (autoWinningTrades / autoTotalTrades) * 100 : 0;
+            
+            const autoTotalValue = autoAccount.balance + (autoAccount.position * currentPrice);
+            const autoROI = ((autoTotalValue - 200) / 200) * 100;
+            
+            const autoAvgTrade = autoAccount.trades.length > 0 ? 
+                autoAccount.trades.reduce((sum, trade) => sum + (trade.profit || 0), 0) / autoAccount.trades.length : 0;
+            
+            // Manual account metrics
+            const manualWinningTrades = manualAccount.trades.filter(t => t.profit && t.profit > 0).length;
+            const manualTotalTrades = manualAccount.trades.filter(t => t.profit !== undefined).length;
+            const manualWinRate = manualTotalTrades > 0 ? (manualWinningTrades / manualTotalTrades) * 100 : 0;
+            
+            const manualTotalValue = manualAccount.balance + (manualAccount.position * currentPrice);
+            const manualROI = ((manualTotalValue - 200) / 200) * 100;
+            
+            const manualAvgTrade = manualAccount.trades.length > 0 ? 
+                manualAccount.trades.reduce((sum, trade) => sum + (trade.profit || 0), 0) / manualAccount.trades.length : 0;
+
+            // Update DOM elements
+            const metrics = {
+                autoTotalTrades: autoTotalTrades,
+                autoWinRate: `${autoWinRate.toFixed(1)}%`,
+                autoAvgTrade: `$${autoAvgTrade.toFixed(2)}`,
+                autoDailyProfit: `$${(autoTotalValue - 200).toFixed(2)}`,
+                autoROI: `${autoROI.toFixed(1)}%`,
+                manualTotalTrades: manualTotalTrades,
+                manualWinRate: `${manualWinRate.toFixed(1)}%`,
+                manualAvgTrade: `$${manualAvgTrade.toFixed(2)}`,
+                manualDailyProfit: `$${(manualTotalValue - 200).toFixed(2)}`,
+                manualROI: `${manualROI.toFixed(1)}%`
+            };
+
+            Object.keys(metrics).forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = metrics[id];
+                }
+            });
+        }
+
+        function initializePriceChart() {
+            console.log('Initializing price chart...');
+            
+            const ctx = document.getElementById('priceChart');
+            if (!ctx) {
+                console.error('Price chart canvas not found');
+                return;
+            }
+            
+            try {
+                priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Bitcoin Price',
+                            data: [],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'minute',
+                                    displayFormats: {
+                                        minute: 'HH:mm'
+                                    }
+                                },
+                                grid: {
+                                    color: '#374151'
+                                },
+                                ticks: {
+                                    color: '#9ca3af'
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: '#374151'
+                                },
+                                ticks: {
+                                    color: '#9ca3af',
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Price chart initialized successfully');
+            } catch (error) {
+                console.error('Error initializing price chart:', error);
+            }
+        }
+
+        function updateChart() {
+            if (!priceChart || priceHistory.length === 0) {
+                console.log('Chart or price history not available');
+                return;
+            }
+            
+            try {
+                const labels = priceHistory.map(p => p.time);
+                const data = priceHistory.map(p => p.price);
+                
+                priceChart.data.labels = labels;
+                priceChart.data.datasets[0].data = data;
+                priceChart.update('none');
+                
+                console.log('Chart updated with', data.length, 'data points');
+            } catch (error) {
+                console.error('Error updating chart:', error);
+            }
+        }
+
+        function updateChartData() {
+            // This would typically fetch different timeframe data
+            // For now, we'll just update the existing chart
+            updateChart();
+        }
+
+        function initializePerformanceChart() {
+            console.log('Initializing performance chart...');
+            
+            const ctx = document.getElementById('performanceChart');
+            if (!ctx) {
+                console.error('Performance chart canvas not found');
+                return;
+            }
+            
+            try {
+                performanceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Auto Trading',
+                            data: [],
+                            borderColor: '#22c55e',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        }, {
+                            label: 'Manual Trading',
+                            data: [],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                labels: {
+                                    color: '#9ca3af'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: '#374151'
+                                },
+                                ticks: {
+                                    color: '#9ca3af'
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: '#374151'
+                                },
+                                ticks: {
+                                    color: '#9ca3af',
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Performance chart initialized successfully');
+            } catch (error) {
+                console.error('Error initializing performance chart:', error);
+            }
+        }
+
+        function updateComparisonChart() {
+            if (!performanceChart) {
+                console.log('Performance chart not available');
+                return;
+            }
+            
+            try {
+                // Generate performance data based on actual trades
+                const labels = [];
+                const autoData = [];
+                const manualData = [];
+                
+                let autoBalance = 200;
+                let manualBalance = 200;
+                
+                // Create timeline based on actual trades
+                const allTrades = [
+                    ...autoAccount.trades.map(t => ({...t, account: 'auto'})),
+                    ...manualAccount.trades.map(t => ({...t, account: 'manual'}))
+                ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                
+                if (allTrades.length === 0) {
+                    // No trades yet, show initial balances
+                    labels.push('Start');
+                    autoData.push(200);
+                    manualData.push(200);
+                } else {
+                    // Process trades chronologically
+                    labels.push('Start');
+                    autoData.push(200);
+                    manualData.push(200);
+                    
+                    allTrades.forEach((trade, index) => {
+                        if (trade.account === 'auto' && trade.profit !== undefined) {
+                            autoBalance += trade.profit;
+                        } else if (trade.account === 'manual' && trade.profit !== undefined) {
+                            manualBalance += trade.profit;
+                        }
+                        
+                        labels.push(`Trade ${index + 1}`);
+                        autoData.push(autoBalance);
+                        manualData.push(manualBalance);
+                    });
+                }
+                
+                performanceChart.data.labels = labels;
+                performanceChart.data.datasets[0].data = autoData;
+                performanceChart.data.datasets[1].data = manualData;
+                performanceChart.update();
+                
+                console.log('Performance chart updated');
+            } catch (error) {
+                console.error('Error updating performance chart:', error);
+            }
+        }
+
+        // Risk management functions
+        function checkStopLoss() {
+            const stopLossPercent = parseFloat(document.getElementById('stopLoss').value) / 100;
+            
+            if (autoAccount.position > 0 && autoAccount.positionSize > 0) {
+                const currentValue = autoAccount.position * currentPrice;
+                const loss = (autoAccount.positionSize - currentValue) / autoAccount.positionSize;
+                
+                if (loss >= stopLossPercent) {
+                    executeTrade('auto', 'SELL', currentValue, 'Stop loss triggered');
+                }
+            }
+        }
+
+        function checkTakeProfit() {
+            const takeProfitPercent = parseFloat(document.getElementById('takeProfit').value) / 100;
+            
+            if (autoAccount.position > 0 && autoAccount.positionSize > 0) {
+                const currentValue = autoAccount.position * currentPrice;
+                const profit = (currentValue - autoAccount.positionSize) / autoAccount.positionSize;
+                
+                if (profit >= takeProfitPercent) {
+                    executeTrade('auto', 'SELL', currentValue, 'Take profit triggered');
+                }
+            }
+        }
+
+        // Start risk management checks
+        setInterval(() => {
+            if (autoTradingEnabled) {
+                checkStopLoss();
+                checkTakeProfit();
+            }
+        }, 10000); // Check every 10 seconds
+    </script>
+</body>
+</html>
+
